@@ -54,8 +54,9 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate){ // 偵測猜測�
         int count = 0;
         if (strlen(input) == 4) { //是否為正確格式
             for (int i = 0; i < 4; i++) {
-                if (input[i] < '0' || input[i] > '0'+size) { //問題
+                if (input[i] < '0' || input[i] > '0'+size) { 
                     guessError = 1;
+                    printf("Invalid input! Please enter a number between 0 and %d.\n",size-1);
                     break;
                 }
                 guess[i] = input[i] - '0'; // char轉int
@@ -64,10 +65,10 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate){ // 偵測猜測�
         }
         else{
             guessError = 1;
+            printf("Invalid input! Please enter exactly 4 numbers.\n");
         }
 
         if (guessError) {
-            printf("Invalid input! Please enter exactly 4 numbers.\n");
             continue;
         }
 
