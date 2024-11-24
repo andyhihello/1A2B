@@ -253,10 +253,12 @@ int main(){
                 break;
             }
         }
+
         if(player_setting == 2){ // 出題者
             quest();
         }
 
+        printf("Game Over\n");
         play_again = IsValidInputNum("play again press 1, quit press 2 : ",1,2); //是否還要再玩並偵測輸入是否正常
 
         if(play_again == 1){ // 再玩一次
