@@ -4,7 +4,7 @@
 #include <time.h>
 
 int IsValidInputNum(const char *text, int min, int max) {
-    char inputBuffer[100]; // 儲存輸入
+    char inputBuffer[1000]; // 儲存輸入
     int input;
 
     while (1) {
@@ -39,7 +39,7 @@ int IsValidInputNum(const char *text, int min, int max) {
 
 void IsValidInputGuess(int *guess,int size,int allowDuplicate){ // 偵測猜測輸入是否正常
     while(1){
-        char input[100]; // 接收输入
+        char input[1000]; // 接收输入
         int guessError = 0; // 標記是否有輸入錯誤
 
         printf("Enter your guess : ");
@@ -54,7 +54,7 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate){ // 偵測猜測�
         int count = 0;
         if (strlen(input) == 4) { //是否為正確格式
             for (int i = 0; i < 4; i++) {
-                if (input[i] < '0' || input[i] > '0'+size) {
+                if (input[i] < '0' || input[i] > '0'+size) { //問題
                     guessError = 1;
                     break;
                 }
@@ -86,7 +86,7 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate){ // 偵測猜測�
         }
 
         else if (allowDuplicate && duplicateCount > 1) { // 允許最多一個重複數字
-            printf("Invalid input! Only one number can appear more than once.\n");
+            printf("Invalid input! Only one number can appear twice.\n");
             guessError = 1;
         }
 
@@ -106,7 +106,7 @@ void generateAnswer(int *number, int size, int allowDuplicate){ //生成1A2B答�
     while (count < 4) {
         int num = rand() % size ; // 隨機生成 0~size-1 的數字
 
-        if (used[num] == 0) { // 檢查該數字是否未使用 並使用後標記
+        if ((!allowDuplicate &&used[num] == 0) || (allowDuplicate && used[num] < 2)) { // 檢查該數字是否未使用 並使用後標記
             number[count] = num;
             used[num] = 1;
             count++;
@@ -134,22 +134,31 @@ void generateAllCombination(int combination[5040][4]) { //生成所有組合
     }
 }
 
-void checkAB(int *A,int *B,int guess[4],int answer[4]){ //偵測幾A幾B
+void checkAB(int *A, int *B, int guess[4], int answer[4]) {
+    int usedAnswer[4] = {0}; // 記錄數字與位置均正確的位置
+    int usedGuess[4] = {0};  // 記錄數字與位置均正確的位置
 
-    for (int i = 0; i < 4; i++) {
-        if (guess[i] == answer[i]) { //數字與位置都正確
+    
+    for (int i = 0; i < 4; i++) { // 計算 A
+        if (guess[i] == answer[i]) {
             (*A)++;
-        }
-        else {
-            for (int j = 0; j < 4; j++) {
-                if (guess[i] == answer[j]) { //數字正確但位置錯誤
-                    (*B)++;
-                    break;
-                }
-            }
+            usedAnswer[i] = 1; // 標記均正確的位置
+            usedGuess[i] = 1;  // 標記均正確的位置
         }
     }
 
+    
+    for (int i = 0; i < 4; i++) { // 計算 B
+        if (usedGuess[i]) continue; // 跳過均正確的位置
+
+        for (int j = 0; j < 4; j++) {
+            if (!usedAnswer[j] && guess[i] == answer[j]) { // 確保數字未被使用過
+                (*B)++;
+                usedAnswer[j] = 1; // 標記該答案數字已使用
+                break;
+            }
+        }
+    }
 }
 
 void play(int size,int allowDuplicate){ // size=數字範圍0~(size-1) 共size個數字 allowDuplicate=是否允許重複數字
@@ -217,16 +226,31 @@ void quest() {
 }
 
 int main(){
-    int play_again,player_setting;
+    int play_again,player_setting,game_setting;
 
     printf("welcome 1A2B\n");
 
     while(1){
 
-        player_setting = IsValidInputNum("guesser press 1, question maker press 2 : ",1,2); // 選擇玩法並偵測輸入是否正常
+        player_setting = IsValidInputNum("guesser press 1, questioner press 2 : ",1,2); // 選擇玩法並偵測輸入是否正常
 
         if(player_setting == 1){ //答題者
-            play(10,0);
+            printf("Easy mode: 8 number and no duplicate\nNormal mode: 10 number and no duplicate\nHard mode: 6 number and one number can appear twice\nUltimate mode: 8 number and one number can appear twice\n");
+            game_setting = IsValidInputNum("Easy press 1, Normal press 2, Hard press 3, Ultimate press 4 : ",1,4); // 選擇玩法並偵測輸入是否正常
+            switch (game_setting){
+            case 1:
+                play(8,0);
+                break;
+            case 2:
+                play(10,0);
+                break;
+            case 3:
+                play(6,1);
+                break;
+            case 4:
+                play(8,1);
+                break;
+            }
         }
         if(player_setting == 2){ // 出題者
             quest();
