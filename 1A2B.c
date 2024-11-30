@@ -3,6 +3,7 @@
 #include <string.h>
 #include <time.h>
 
+
 int IsValidInputNum(const char *text, int min, int max) {
     char inputBuffer[1000]; // 儲存輸入
     int input;
@@ -10,7 +11,7 @@ int IsValidInputNum(const char *text, int min, int max) {
     while (1) {
         printf("%s", text);
 
-        if (fgets(inputBuffer, sizeof(inputBuffer), stdin) == NULL) {
+        if (fgets(inputBuffer, sizeof(inputBuffer), stdin) == NULL) { //偵測是否為空集合
             printf("Invalid input! Please enter again.\n");
             continue;
         }
@@ -37,14 +38,19 @@ int IsValidInputNum(const char *text, int min, int max) {
     }
 }
 
-void IsValidInputGuess(int *guess,int size,int allowDuplicate){ // 偵測猜測輸入是否正常
+void IsValidInputGuess(int *guess,int size,int allowDuplicate,int versus,int player){ // 偵測猜測輸入是否正常
     while(1){
         char input[1000]; // 接收输入
         int guessError = 0; // 標記是否有輸入錯誤
 
-        printf("Enter your guess : ");
+        if(!versus){
+            printf("Enter your guess : ");
+        }
+        if(versus){
+            printf("Enter %dP guess : ",player);
+        }
 
-        if (fgets(input, sizeof(input), stdin) == NULL) {
+        if (fgets(input, sizeof(input), stdin) == NULL) { //偵測是否為空集合
             printf("Invalid input! Please try again.\n");
             continue;
         }
@@ -54,7 +60,7 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate){ // 偵測猜測�
         int count = 0;
         if (strlen(input) == 4) { //是否為正確格式
             for (int i = 0; i < 4; i++) {
-                if (input[i] < '0' || input[i] > '0'+size) { 
+                if (input[i] < '0' || input[i] > '0' + size - 1) { 
                     guessError = 1;
                     printf("Invalid input! Please enter a number between 0 and %d.\n",size-1);
                     break;
@@ -103,14 +109,19 @@ void generateAnswer(int *number, int size, int allowDuplicate){ //生成1A2B答�
     srand(time(0)); // 初始化隨機數種子
     int used[10] = {0}; // 記錄數字是否已使用
     int count = 0;
+    int duplicate = 0;
 
     while (count < 4) {
         int num = rand() % size ; // 隨機生成 0~size-1 的數字
-
-        if ((!allowDuplicate &&used[num] == 0) || (allowDuplicate && used[num] < 2)) { // 檢查該數字是否未使用 並使用後標記
+        // rule 1:若不允許重複(!allowDuplicate) 或 允許重複(allowDuplicate)且有數字已使用2次 則檢測數字是否有被使用
+        // rule 2:若允許重複(allowDuplicate) 且無數字已使用2次 生成數字直到有數字使用2次後更換規則
+        if ( ( ( (allowDuplicate && duplicate) || !allowDuplicate) && used[num] == 0) || (allowDuplicate && !duplicate) ) { 
             number[count] = num;
-            used[num] = 1;
+            used[num] += 1;
             count++;
+            if(used[num] == 2){ //(allowDuplicate使用)若有數字已使用2次 標記並之後回到rule 1
+                duplicate = 1;
+            }
         }
     }
 }
@@ -162,50 +173,60 @@ void checkAB(int *A, int *B, int guess[4], int answer[4]) {
     }
 }
 
-void play(int size,int allowDuplicate){ // size=數字範圍0~(size-1) 共size個數字 allowDuplicate=是否允許重複數字
+int play(int size,int allowDuplicate,int versus){ // size=數字範圍0~(size-1) 共size個數字 allowDuplicate=是否允許重複數字
 
     int answer[4]; //儲存1A2B答案
     generateAnswer(answer,size,allowDuplicate); // 生成1A2B答案
-    printf("Game starts!\n");
+    printf("---------------------------------------------------------------\n");
+    if(versus) printf("1P guesses first, followed by 2P.\nThe first player to guess correctly wins.\n");
     printf("your guess must be 4 digits between 0 and %d(ex:0123)\n",size-1);
+    printf("---------------------------------------------------------------\n");
+    printf("Game starts!\n");
 
     int guess[4]; // 儲存玩家猜測
     int attempts = 0; // 猜測次數統計
 
     while (1) {
         attempts++;
-        IsValidInputGuess(guess,size,allowDuplicate); // 輸入4個數並偵測選擇輸入是否正常
+
+        IsValidInputGuess(guess,size,allowDuplicate,versus,(attempts+1) %2 +1); // 輸入4個數並偵測選擇輸入是否正常
         int A = 0, B = 0;
         checkAB(&A,&B,guess,answer); // 檢測幾A幾B
         printf("%dA%dB\n", A, B);
         if (A == 4) { // 若4A則獲勝
-            printf("YOU WIN! You guessed the number in %d attempts.\n", attempts);
+            if(!versus){
+                printf("YOU WIN! You guessed the number in %d attempts.\n", attempts);
+            }
+            if(versus){
+                printf("%dP WIN! You guessed the number in %d attempts.\n",(attempts+1) %2 +1,attempts);
+            }
             break;
         }
     }
+
+    return attempts;
+
 }
 
 void quest() {
     int combination[5040][4];
     generateAllCombination(combination);
-    printf("Please think of a 4-digit number (digits are 0~9, no duplicates).\n");
 
     int count = 5040;
     while (count > 0) {
         int guess[4] = {combination[0][0], combination[0][1], combination[0][2], combination[0][3]};
-        printf("My guess: %d%d%d%d, please enter the feedback\n", guess[0], guess[1], guess[2], guess[3]);
+        printf("My guess: %d%d%d%d\n", guess[0], guess[1], guess[2], guess[3]);
 
         int A, B;
         A = IsValidInputNum("A: ",0,4);
+        if (A == 4) {
+            printf("PC WIN!\n");
+            return;
+        }
         B = IsValidInputNum("B: ",0,4);
 
         if (A + B > 4) {
             printf("YOU CHEAT!\n");
-            return;
-        }
-
-        if (A == 4) {
-            printf("PC WIN!\n");
             return;
         }
 
@@ -227,43 +248,102 @@ void quest() {
 }
 
 int main(){
+    int bestrecord[4] = {999,999,999,999}; // 紀錄各種模式下的最佳紀錄(猜測次數越小越佳){easy,normal,hard,ultimate}
     int play_again,player_setting,game_setting;
 
-    printf("welcome 1A2B\n");
-
     while(1){
-
-        player_setting = IsValidInputNum("guesser press 1, questioner press 2 : ",1,2); // 選擇玩法並偵測輸入是否正常
+        printf("welcome 1A2B! Please select the mode\n");
+        int attempts;
+        player_setting = IsValidInputNum("guesser press 1, questioner press 2, 2P versus press 3 : ",1,3); // 選擇玩法並偵測輸入是否正常
 
         if(player_setting == 1){ //答題者
+
+            printf("---------------------------------------------------------------\n");
             printf("Easy mode: 8 number and no duplicate\nNormal mode: 10 number and no duplicate\nHard mode: 6 number and one number can appear twice\nUltimate mode: 8 number and one number can appear twice\n");
+            printf("---------------------------------------------------------------\n");
+
             game_setting = IsValidInputNum("Easy press 1, Normal press 2, Hard press 3, Ultimate press 4 : ",1,4); // 選擇玩法並偵測輸入是否正常
+            
             switch (game_setting){
             case 1:
-                play(8,0);
+                attempts = play(8,0,0);
+                if (attempts < bestrecord[0]){
+                    printf("Congratulations on breaking the record! Your best record in Easy mode has been updated to %d\n",attempts);
+                    bestrecord[0] = attempts; // 更新紀錄
+                }
+                else{
+                    printf("Your best record in Easy mode is %d\n",bestrecord[0]);
+                }
                 break;
             case 2:
-                play(10,0);
+                attempts = play(10,0,0);
+                if (attempts < bestrecord[1]){
+                    printf("Congratulations on breaking the record! Your best record in Normal mode has been updated to %d\n",attempts);
+                    bestrecord[1] = attempts; // 更新紀錄
+                }
+                else{
+                    printf("Your best record in Normal mode is %d\n",bestrecord[1]);
+                }
                 break;
             case 3:
-                play(6,1);
+                attempts = play(6,1,0);
+                if (attempts < bestrecord[2]){
+                    printf("Congratulations on breaking the record! Your best record in Hard mode has been updated to %d\n",attempts);
+                    bestrecord[2] = attempts; // 更新紀錄
+                } 
+                else{
+                    printf("Your best record in Hard mode is %d\n",bestrecord[2]);
+                }
                 break;
             case 4:
-                play(8,1);
+                play(8,1,0);
+                if (attempts < bestrecord[3]){
+                    printf("Congratulations on breaking the record! Your best record in Ultimate mode has been updated to %d\n",attempts);
+                    bestrecord[3] = attempts; // 更新紀錄
+                }
+                else{
+                    printf("Your best record in Ultimate mode is %d\n",bestrecord[3]);
+                }
                 break;
+
             }
         }
 
         if(player_setting == 2){ // 出題者
+            printf("-----------------------------------------------------------------------------------\n");
+            printf("Please think of a 4-digit number (digits are 0~9, no duplicates)\n");
+            printf("I will guess the answer. Please first enter how many A, then enter how many B.\n");
+            printf("-----------------------------------------------------------------------------------\n");
             quest();
         }
 
-        printf("Game Over\n");
-        play_again = IsValidInputNum("play again press 1, quit press 2 : ",1,2); //是否還要再玩並偵測輸入是否正常
+        if(player_setting == 3){ //1VS1對戰
 
-        if(play_again == 1){ // 再玩一次
-            printf("Have fun!\n");
+            printf("---------------------------------------------------------------\n");
+            printf("Easy mode: 8 number and no duplicate\nNormal mode: 10 number and no duplicate\nHard mode: 6 number and one number can appear twice\nUltimate mode: 8 number and one number can appear twice\n");
+            printf("---------------------------------------------------------------\n");
+
+            game_setting = IsValidInputNum("Easy press 1, Normal press 2, Hard press 3, Ultimate press 4 : ",1,4); // 選擇玩法並偵測輸入是否正常
+
+            switch (game_setting){
+            case 1:
+                attempts = play(8,0,1);
+                break;
+            case 2:
+                attempts = play(10,0,1);
+                break;
+            case 3:
+                attempts = play(6,1,1);
+                break;
+            case 4:
+                attempts = play(8,1,1);
+                break;
+            }
         }
+        printf("---------\n");
+        printf("Game Over\n");
+        printf("---------\n");
+        play_again = IsValidInputNum("play again press 1, quit press 2 : ",1,2); //是否還要再玩並偵測輸入是否正常
 
         if(play_again == 2){ // 離開
             printf("Thanks for playing!");
