@@ -4,7 +4,7 @@
 #include <time.h>
 
 
-int IsValidInputNum(const char *text, int min, int max) {
+int IsValidInputNum(const char *text, int min, int max) { // 偵測數字輸入是否正常
     char inputBuffer[1000]; // 儲存輸入
     int input;
 
@@ -17,6 +17,7 @@ int IsValidInputNum(const char *text, int min, int max) {
         }
 
         inputBuffer[strcspn(inputBuffer, "\n")] = '\0'; // 移除換行符號
+
         if (strlen(inputBuffer) == 0) { // 檢查是否為空
             printf("Invalid input! Please enter again.\n");
             continue;
@@ -27,7 +28,6 @@ int IsValidInputNum(const char *text, int min, int max) {
             printf("Invalid input! Please enter a valid number.\n");
             continue;
         }
-
 
         if (input < min || input > max) { // 檢查輸入是否在指定範圍內
             printf("Invalid input! Please enter a number between %d and %d.\n", min, max);
@@ -43,12 +43,8 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate,int versus,int pla
         char input[1000]; // 接收输入
         int guessError = 0; // 標記是否有輸入錯誤
 
-        if(!versus){
-            printf("Enter your guess : ");
-        }
-        if(versus){
-            printf("Enter %dP guess : ",player);
-        }
+        if(!versus) printf("Enter your guess : ");//猜題模式
+        if(versus) printf("Enter %dP guess : ",player); //一對一模式
 
         if (fgets(input, sizeof(input), stdin) == NULL) { //偵測是否為空集合
             printf("Invalid input! Please try again.\n");
@@ -60,12 +56,12 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate,int versus,int pla
         int count = 0;
         if (strlen(input) == 4) { //是否為正確格式
             for (int i = 0; i < 4; i++) {
-                if (input[i] < '0' || input[i] > '0' + size - 1) { 
+                if (input[i] < '0' || input[i] > '0' + size - 1) { //數字在範圍內
                     guessError = 1;
                     printf("Invalid input! Please enter a number between 0 and %d.\n",size-1);
                     break;
                 }
-                guess[i] = input[i] - '0'; // char轉int
+                guess[i] = input[i] - '0'; //char轉int
                 count++;
             }
         }
@@ -74,9 +70,7 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate,int versus,int pla
             printf("Invalid input! Please enter exactly 4 numbers.\n");
         }
 
-        if (guessError) {
-            continue;
-        }
+        if (guessError) continue;
 
         int duplicateCount = 0;
             for(int i = 0; i < 3;i++){ // 檢測重複數字
@@ -97,9 +91,8 @@ void IsValidInputGuess(int *guess,int size,int allowDuplicate,int versus,int pla
             guessError = 1;
         }
 
-        if(!guessError){ // 輸入完整
-            break;
-        }
+        if(!guessError) break; // 輸入正確
+            
     }
 
 }
@@ -128,6 +121,7 @@ void generateAnswer(int *number, int size, int allowDuplicate){ //生成1A2B答�
 
 void generateAllCombination(int combination[5040][4]) { //生成所有組合
     int index = 0;
+
     for (int a = 0; a < 10; a++) {
         for (int b = 0; b < 10; b++) {
             if (b == a) continue;
@@ -146,11 +140,10 @@ void generateAllCombination(int combination[5040][4]) { //生成所有組合
     }
 }
 
-void checkAB(int *A, int *B, int guess[4], int answer[4]) {
-    int usedAnswer[4] = {0}; // 記錄數字與位置均正確的位置
-    int usedGuess[4] = {0};  // 記錄數字與位置均正確的位置
+void checkAB(int *A, int *B, int guess[4], int answer[4]) { //偵測幾A幾B
+    int usedAnswer[4] = {0}; // 標記數字與位置均正確的位置
+    int usedGuess[4] = {0};  // 標記數字與位置均正確的位置
 
-    
     for (int i = 0; i < 4; i++) { // 計算 A
         if (guess[i] == answer[i]) {
             (*A)++;
@@ -159,12 +152,11 @@ void checkAB(int *A, int *B, int guess[4], int answer[4]) {
         }
     }
 
-    
     for (int i = 0; i < 4; i++) { // 計算 B
-        if (usedGuess[i]) continue; // 跳過均正確的位置
+        if (usedGuess[i]) continue; // 跳過已標記位置
 
         for (int j = 0; j < 4; j++) {
-            if (!usedAnswer[j] && guess[i] == answer[j]) { // 確保數字未被使用過
+            if (!usedAnswer[j] && guess[i] == answer[j]) { // 確保數字未被標記
                 (*B)++;
                 usedAnswer[j] = 1; // 標記該答案數字已使用
                 break;
@@ -194,12 +186,8 @@ int play(int size,int allowDuplicate,int versus){ // size=數字範圍0~(size-1)
         checkAB(&A,&B,guess,answer); // 檢測幾A幾B
         printf("%dA%dB\n", A, B);
         if (A == 4) { // 若4A則獲勝
-            if(!versus){
-                printf("YOU WIN! You guessed the number in %d attempts.\n", attempts);
-            }
-            if(versus){
-                printf("%dP WIN! You guessed the number in %d attempts.\n",(attempts+1) %2 +1,attempts);
-            }
+            if(!versus) printf("YOU WIN! You guessed the number in %d attempts.\n", attempts); //猜題模式
+            if(versus) printf("%dP WIN! You guessed the number in %d attempts.\n",(attempts+1) %2 +1,attempts); //一對一模式
             break;
         }
     }
@@ -208,9 +196,9 @@ int play(int size,int allowDuplicate,int versus){ // size=數字範圍0~(size-1)
 
 }
 
-void quest() {
+void quest(){//出題者模式
     int combination[5040][4];
-    generateAllCombination(combination);
+    generateAllCombination(combination);//生成所有組合
 
     int count = 5040;
     while (count > 0) {
@@ -218,14 +206,14 @@ void quest() {
         printf("My guess: %d%d%d%d\n", guess[0], guess[1], guess[2], guess[3]);
 
         int A, B;
-        A = IsValidInputNum("A: ",0,4);
+        A = IsValidInputNum("A: ",0,4); // 輸入幾個A並偵測輸入是否正常
         if (A == 4) {
             printf("PC WIN!\n");
             return;
         }
-        B = IsValidInputNum("B: ",0,4);
+        B = IsValidInputNum("B: ",0,4); // 輸入幾個B並偵測輸入是否正常
 
-        if (A + B > 4) {
+        if (A + B > 4) {//A+B超過4視同作弊處理
             printf("YOU CHEAT!\n");
             return;
         }
@@ -234,11 +222,14 @@ void quest() {
         for (int i = 0; i < count; i++) { //淘汰不符合的組合
             int tempA = 0, tempB = 0;
             checkAB(&tempA, &tempB, guess, combination[i]);
-            if (tempA == A && tempB == B) {
-                memcpy(combination[newCount++], combination[i], 4 * sizeof(int));
+            if (tempA == A && tempB == B) {//該組合是否符合feedback
+                for (int j = 0; j < 4; j++) {//更新組合
+                    combination[newCount][j] = combination[i][j];
+                }
+                newCount++;
             }
         }
-        count = newCount;
+        count = newCount;//紀錄剩餘組合數
 
         if (count == 0) { //feedback有矛盾
             printf("YOU CHEAT!\n");
@@ -247,11 +238,11 @@ void quest() {
     }
 }
 
-int main(){
+int main(){ 
     int bestrecord[4] = {999,999,999,999}; // 紀錄各種模式下的最佳紀錄(猜測次數越小越佳){easy,normal,hard,ultimate}
     int play_again,player_setting,game_setting;
 
-    while(1){
+    while(1){ //play(數字範圍,是否數字重複,是否一對一模式)
         printf("welcome 1A2B! Please select the mode\n");
         int attempts;
         player_setting = IsValidInputNum("guesser press 1, questioner press 2, 2P versus press 3 : ",1,3); // 選擇玩法並偵測輸入是否正常
@@ -340,6 +331,7 @@ int main(){
                 break;
             }
         }
+
         printf("---------\n");
         printf("Game Over\n");
         printf("---------\n");
